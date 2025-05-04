@@ -1,0 +1,183 @@
+
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>재료 관리 앱 (모바일)</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #ffeef2;
+            margin: 0;
+            padding: 1rem;
+            color: #333;
+        }
+        h1, h2 {
+            text-align: center;
+            color: #d6336c;
+        }
+        form, table {
+            max-width: 500px;
+            margin: auto;
+            background: white;
+            padding: 1rem;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+        label, input, select, button {
+            display: block;
+            width: 100%;
+            margin-bottom: 0.75rem;
+        }
+        input, select {
+            padding: 0.5rem;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        button {
+            background-color: #f783ac;
+            color: white;
+            border: none;
+            padding: 0.75rem;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #e64980;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+        }
+        th, td {
+            padding: 0.5rem;
+            border: 1px solid #f1f1f1;
+            text-align: center;
+        }
+        select#sortOption {
+            margin-bottom: 1rem;
+        }
+    </style>
+</head>
+<body>
+    <h1>재료 관리 앱</h1>
+    <form id="addItemForm">
+        <label for="itemName">재료명:</label>
+        <input type="text" id="itemName" required>
+
+        <label for="itemPrice">가격:</label>
+        <input type="number" id="itemPrice" required>
+
+        <label for="itemQuantity">수량:</label>
+        <input type="number" id="itemQuantity" required>
+
+        <label for="itemDate">구매일:</label>
+        <input type="date" id="itemDate" required>
+
+        <button type="submit">추가</button>
+    </form>
+
+    <section>
+        <h2>기록된 재료</h2>
+        <label for="sortOption">정렬 기준: </label>
+        <select id="sortOption">
+            <option value="date-desc">최신 날짜순</option>
+            <option value="date-asc">오래된 날짜순</option>
+            <option value="price-desc">가격 높은 순</option>
+            <option value="price-asc">가격 낮은 순</option>
+        </select>
+        <table>
+            <thead>
+                <tr>
+                    <th>재료명</th>
+                    <th>수량</th>
+                    <th>총 가격</th>
+                    <th>개당 가격</th>
+                    <th>구매일</th>
+                    <th>삭제</th>
+                </tr>
+            </thead>
+            <tbody id="itemTableBody"></tbody>
+        </table>
+    </section>
+
+    <script>
+        const addItemForm = document.getElementById('addItemForm');
+        const itemTableBody = document.getElementById('itemTableBody');
+        const items = [];
+
+        function renderTable() {
+            itemTableBody.innerHTML = "";
+            for (const item of items) {
+                const unitPrice = (item.price / item.quantity).toFixed(2);
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${item.name}</td>
+                    <td>${item.quantity}</td>
+                    <td>${item.price.toLocaleString()}원</td>
+                    <td>${unitPrice}원</td>
+                    <td>${item.date}</td>
+                    <td><button class="deleteBtn">삭제</button></td>
+                `;
+                row.querySelector('.deleteBtn').addEventListener('click', () => {
+                    const index = items.indexOf(item);
+                    if (index > -1) items.splice(index, 1);
+                    renderTable();
+                });
+                itemTableBody.appendChild(row);
+            }
+        }
+
+        function sortItems(criteria) {
+            switch (criteria) {
+                case "date-desc":
+                    items.sort((a, b) => b.date.localeCompare(a.date));
+                    break;
+                case "date-asc":
+                    items.sort((a, b) => a.date.localeCompare(b.date));
+                    break;
+                case "price-desc":
+                    items.sort((a, b) => b.price - a.price);
+                    break;
+                case "price-asc":
+                    items.sort((a, b) => a.price - b.price);
+                    break;
+            }
+            renderTable();
+        }
+
+        document.getElementById('sortOption').addEventListener('change', (e) => {
+            sortItems(e.target.value);
+        });
+
+        addItemForm.addEventListener('submit', function(event) {
+            event.preventDefault();
+            const itemName = document.getElementById('itemName').value.trim();
+            const itemPrice = parseFloat(document.getElementById('itemPrice').value);
+            const itemQuantity = parseInt(document.getElementById('itemQuantity').value);
+            const itemDate = document.getElementById('itemDate').value;
+
+            if (!itemName || isNaN(itemPrice) || isNaN(itemQuantity) || !itemDate) {
+                alert("모든 항목을 올바르게 입력해주세요.");
+                return;
+            }
+
+            items.push({
+                name: itemName,
+                price: itemPrice,
+                quantity: itemQuantity,
+                date: itemDate
+            });
+
+            sortItems(document.getElementById('sortOption').value);
+            addItemForm.reset();
+            document.getElementById("itemDate").value = new Date().toISOString().split('T')[0];
+        });
+
+        // 오늘 날짜 기본값 설정
+        document.getElementById("itemDate").value = new Date().toISOString().split('T')[0];
+    </script>
+</body>
+</html>
