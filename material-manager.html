@@ -1,0 +1,193 @@
+
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>재료 관리 앱</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body {
+      background-color: #fff0f5;
+      font-family: 'Arial', sans-serif;
+      padding: 20px;
+    }
+    h1 {
+      text-align: center;
+      color: #ff4081;
+    }
+    input, select, button {
+      width: 100%;
+      padding: 10px;
+      margin: 6px 0;
+      border: 1px solid #ccc;
+      border-radius: 10px;
+    }
+    button {
+      background-color: #ff4081;
+      color: white;
+      font-weight: bold;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 16px;
+    }
+    th, td {
+      padding: 10px;
+      text-align: center;
+      border: 1px solid #aaa;
+      white-space: nowrap;
+    }
+    th {
+      background-color: #ffe4ec;
+    }
+    tr:nth-child(even) td {
+      background-color: #fff5f9;
+    }
+    .total {
+      font-size: 1.1em;
+      font-weight: bold;
+      text-align: right;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+
+<h1>재료 관리 앱</h1>
+
+<input type="date" id="date" value="">
+<input type="text" id="desc" placeholder="재료명">
+<input type="number" id="price" placeholder="가격 (총합 아님)">
+<input type="number" id="qty" placeholder="수량" value="1" min="1">
+<select id="category">
+  <option value="네일팁">네일팁</option>
+  <option value="네일폴리쉬">네일폴리쉬</option>
+  <option value="네일 스티커">네일 스티커</option>
+  <option value="네일 파츠">네일 파츠</option>
+  <option value="포장재료">포장재료</option>
+  <option value="기타">기타</option>
+</select>
+<button onclick="addItem()">추가</button>
+
+<div>
+  <label for="filter">카테고리 필터:</label>
+  <select id="filter" onchange="render()">
+    <option value="전체">전체</option>
+    <option value="네일팁">네일팁</option>
+    <option value="네일폴리쉬">네일폴리쉬</option>
+    <option value="네일 스티커">네일 스티커</option>
+    <option value="네일 파츠">네일 파츠</option>
+    <option value="포장재료">포장재료</option>
+    <option value="기타">기타</option>
+  </select>
+</div>
+
+<div class="total" id="total">총합: 0원</div>
+
+<table id="table">
+  <thead>
+    <tr>
+      <th>날짜</th>
+      <th>재료명</th>
+      <th>가격</th>
+      <th>수량</th>
+      <th>개당 가격</th>
+      <th>카테고리</th>
+      <th>수정</th>
+      <th>삭제</th>
+    </tr>
+  </thead>
+  <tbody></tbody>
+</table>
+
+<script>
+  const dateInput = document.getElementById("date");
+  dateInput.value = new Date().toISOString().split("T")[0];
+
+  function getData() {
+    return JSON.parse(localStorage.getItem("materials") || "[]");
+  }
+
+  function saveData(data) {
+    localStorage.setItem("materials", JSON.stringify(data));
+  }
+
+  function render() {
+    const data = getData();
+    const tbody = document.querySelector("#table tbody");
+    const filter = document.getElementById("filter").value;
+    tbody.innerHTML = "";
+
+    let total = 0;
+
+    data.forEach((item, index) => {
+      if (filter !== "전체" && item.category !== filter) return;
+
+      const tr = document.createElement("tr");
+      const unitPrice = (item.price / item.qty).toFixed(2);
+
+      tr.innerHTML = `
+        <td>${item.date}</td>
+        <td>${item.desc}</td>
+        <td>${item.price.toLocaleString()}원</td>
+        <td>${item.qty}</td>
+        <td>${unitPrice}원</td>
+        <td>${item.category}</td>
+        <td><button onclick="editItem(${index})">수정</button></td>
+        <td><button onclick="deleteItem(${index})">삭제</button></td>
+      `;
+      tbody.appendChild(tr);
+
+      total += item.price;
+    });
+
+    document.getElementById("total").innerText = `총합: ${total.toLocaleString()}원`;
+  }
+
+  function addItem() {
+    const date = document.getElementById("date").value;
+    const desc = document.getElementById("desc").value;
+    const price = parseInt(document.getElementById("price").value);
+    const qty = parseInt(document.getElementById("qty").value);
+    const category = document.getElementById("category").value;
+
+    if (!desc || isNaN(price) || isNaN(qty) || qty < 1 || price < 0) {
+      return alert("모든 항목을 정확히 입력해주세요.");
+    }
+
+    const data = getData();
+    data.unshift({ date, desc, price, qty, category });
+    saveData(data);
+    render();
+
+    document.getElementById("desc").value = "";
+    document.getElementById("price").value = "";
+    document.getElementById("qty").value = "1";
+  }
+
+  function deleteItem(index) {
+    const data = getData();
+    data.splice(index, 1);
+    saveData(data);
+    render();
+  }
+
+  function editItem(index) {
+    const data = getData();
+    const item = data[index];
+
+    document.getElementById("date").value = item.date;
+    document.getElementById("desc").value = item.desc;
+    document.getElementById("price").value = item.price;
+    document.getElementById("qty").value = item.qty;
+    document.getElementById("category").value = item.category;
+
+    deleteItem(index);
+  }
+
+  render();
+</script>
+
+</body>
+</html>
